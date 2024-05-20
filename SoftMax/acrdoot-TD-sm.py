@@ -25,9 +25,9 @@ def create_bins(num_bins, lower_bounds, upper_bounds):
 
 
 # Parámetros
-alpha = 0.001  # Tasa de aprendizaje
+alpha = 0.1  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importancia de recompensas futuras
-epsilon = 0.01  # Parámetro epsilon para la política epsilon-greedy que controla la exploración vs la explotación
+epsilon = 0.1  # Parámetro epsilon para la política epsilon-greedy que controla la exploración vs la explotación
 num_episodes = 1000  # Número total de episodios de entrenamiento
 max_steps = 500  # Número máximo de pasos por episodio
 num_bins = 10  # Número de bins para discretizar cada dimensión del espacio de estados
@@ -85,7 +85,6 @@ for episode in tqdm(range(num_episodes), desc="Episodios de entrenamiento"):
         np.mean(episode_td_errors)
     )  # Promedio de los errores TD del episodio
 
-print(Q)
 # Graficar las recompensas
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)

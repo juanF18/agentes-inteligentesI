@@ -10,7 +10,7 @@ from tqdm import tqdm
     de control donde el bojetivo es balancear 
     un brazo doble invertido
 """
-env = gym.make("Acrobot-v1")
+env = gym.make("Acrobot-v1", render_mode="human")
 
 
 # Función para discretizar el espacio de estados
@@ -51,9 +51,8 @@ def create_bins(num_bins, lower_bounds, upper_bounds):
 
 
 # Parámetros
-alpha = 0.001  # Tasa de aprendizaje
+alpha = 0.01  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importacion de recompensas futuras
-epsilon = 0.01  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
 num_episodes = 1000  # Numero total de episodios de entrenar
 max_steps = 500  # Numero maximo de pasos por episodio
 num_bins = 10  # Numero de bisn para discretizar, cada dimension del espacio de estados
@@ -77,12 +76,18 @@ bins = create_bins(num_bins, lower_bounds, upper_bounds)
 Q = defaultdict(lambda: np.zeros(env.action_space.n))
 
 
-# Función para elegir acción usando la política epsilon-greedy
+# Función para elegir acción usando la política softmax
 def choose_action(state):
-    if np.random.uniform(0, 1) < epsilon:
-        return env.action_space.sample()
-    else:
-        return np.argmax(Q[state])
+    q_values = Q[state]
+    probabilities = softmax(q_values)
+    action = np.random.choice(len(q_values), p=probabilities)
+    return action
+
+
+# Función de SoftMax
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum()
 
 
 # Entrenamiento del agente usando SARSA
@@ -102,10 +107,10 @@ for episode in tqdm(range(num_episodes), desc="Episodios de entrenamiento"):
         state = next_state
         action = next_action
         total_reward += reward
+        print(total_reward)
         if done:
             break
     rewards.append(total_reward)
-
 # Graficar las recompensas
 plt.plot(range(num_episodes), rewards)
 plt.xlabel("Episodes")
