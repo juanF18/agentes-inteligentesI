@@ -53,7 +53,7 @@ def create_bins(num_bins, lower_bounds, upper_bounds):
 # Parámetros
 alpha = 0.001  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importacion de recompensas futuras
-epsilon = 0.01  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
+epsilon = 0.1  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
 num_episodes = 1000  # Numero total de episodios de entrenar
 max_steps = 500  # Numero maximo de pasos por episodio
 num_bins = 10  # Numero de bisn para discretizar, cada dimension del espacio de estados
