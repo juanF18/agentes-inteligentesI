@@ -8,13 +8,16 @@ from tqdm import tqdm
 env = gym.make("Taxi-v3")
 
 # Parámetros
-alpha = 0.6  # Tasa de aprendizaje
-gamma = (
-    0.99  # Factor de descuento que determina la importancia de las recompensas futuras
-)
-epsilon = 0.0000001  # Parámetro epsilon para la política epsilon-greedy que controla la exploración vs la explotación
-num_episodes = 1500  # Número total de episodios de entrenamiento
-max_steps = 100  # Número máximo de pasos por episodio
+# Tasa de aprendizaje
+alpha = 0.6
+# Factor de descuento que determina la importancia de las recompensas futuras
+gamma = 0.99
+# Parámetro epsilon para la política epsilon-greedy que controla la exploración vs la explotación
+epsilon = 0.01
+# Número total de episodios de entrenamiento
+num_episodes = 10000
+# Número máximo de pasos por episodio
+max_steps = 1000
 
 # Inicializar la Q-Table
 Q = defaultdict(lambda: np.zeros(env.action_space.n))

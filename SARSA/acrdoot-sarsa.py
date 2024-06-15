@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from tqdm import tqdm
 
-# Crear el entorno
 """
     Crea una instancia del entorno, un entorno
     de control donde el bojetivo es balancear 
@@ -13,7 +12,6 @@ from tqdm import tqdm
 env = gym.make("Acrobot-v1")
 
 
-# Función para discretizar el espacio de estados
 """
     Convierte el estado continuo en un estado discreto
     State: Vector de estado continuo proporcionado por el entorno
@@ -31,7 +29,6 @@ def discretize_state(state, bins):
     return tuple(state_disc)
 
 
-# Función para crear bins de discretización
 """
     Crea los bins necesario para discretizar el espacio de los
     estados.
@@ -51,9 +48,9 @@ def create_bins(num_bins, lower_bounds, upper_bounds):
 
 
 # Parámetros
-alpha = 0.001  # Tasa de aprendizaje
+alpha = 0.6  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importacion de recompensas futuras
-epsilon = 0.1  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
+epsilon = 0.01  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
 num_episodes = 1000  # Numero total de episodios de entrenar
 max_steps = 500  # Numero maximo de pasos por episodio
 num_bins = 10  # Numero de bisn para discretizar, cada dimension del espacio de estados
@@ -107,8 +104,23 @@ for episode in tqdm(range(num_episodes), desc="Episodios de entrenamiento"):
     rewards.append(total_reward)
 
 # Graficar las recompensas
-plt.plot(range(num_episodes), rewards)
+# Cálculo de media móvil para suavizar las recompensas
+window_size = 10
+moving_average_rewards = np.convolve(
+    rewards, np.ones(window_size) / window_size, mode="valid"
+)
+
+# Graficar las recompensas
+plt.plot(range(num_episodes), rewards, label="Recompensas por Episodio", alpha=0.3)
+plt.plot(
+    range(len(moving_average_rewards)),
+    moving_average_rewards,
+    label="Media Móvil de Recompensas",
+    color="red",
+)
 plt.xlabel("Episodes")
 plt.ylabel("Rewards")
 plt.title("Rewards vs Episodes")
+plt.legend()
+plt.grid(True)
 plt.show()
