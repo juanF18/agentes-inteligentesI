@@ -7,11 +7,11 @@ import pickle
 
 
 # Hiperparámetros
-alpha = 0.001  # Tasa de aprendizaje
+alpha = 0.6  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importacion de recompensas futuras
 epsilon = 0.01  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
-num_episodes = 1000  # Numero total de episodios de entrenar
-max_steps = 500  # Numero maximo de pasos por episodio
+num_episodes = 10000  # Numero total de episodios de entrenar
+max_steps = 1000  # Numero maximo de pasos por episodio
 # num_bins = 10  # Numero de bisn para discretizar, cada dimension del espacio de estados
 
 # Crear el entorno
@@ -30,8 +30,7 @@ Q = None
 try:
     with open("Qtx.pkl", "rb") as f:
         Q_dict = pickle.load(f)
-    Q = defaultdict(lambda: np.zeros(env.action_space.n), Q_dict)
-    # Q = np.load("Qtx.npy")
+    Q = defaultdict(lambda: np.zeros(env.action_space.n), Q_dict)    
 except Exception as e:
     print(e)
 
@@ -51,8 +50,8 @@ def choose_action(state):
 # Entrenamiento del agente usando Q-learning
 rewardsEpoch = []
 
-
-def taxi():
+# Funcion de entrenamiento en el ambiente de taxi
+def taxi():    
     for episode in tqdm(range(num_episodes), desc="Episodios de entrenamiento"):
         state, _ = env.reset()
         total_reward = 0
@@ -76,6 +75,7 @@ def taxi():
         pickle.dump(Q_dict, f)
 
 
+# llamamos la función
 taxi()
 
 # Graficar las recompensas
@@ -83,4 +83,6 @@ plt.plot(range(num_episodes), rewardsEpoch)
 plt.xlabel("Episodes")
 plt.ylabel("Rewards")
 plt.title("Rewards vs Episodes")
+plt.legend()
+plt.savefig(f"gph/QTD_{alpha}_{gamma}_{epsilon}.png")
 plt.show()
