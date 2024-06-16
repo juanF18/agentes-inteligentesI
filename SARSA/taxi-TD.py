@@ -13,6 +13,7 @@ epsilon = 0.01  # Parámetro epsilon para la política epsilon-greedy que contro
 num_episodes = 10000  # Numero total de episodios de entrenar
 max_steps = 1000  # Numero maximo de pasos por episodio
 # num_bins = 10  # Numero de bisn para discretizar, cada dimension del espacio de estados
+method=["Q-learning", "SARSA", "T(0)"]
 
 # Crear el entorno
 """
@@ -84,5 +85,5 @@ plt.xlabel("Episodes")
 plt.ylabel("Rewards")
 plt.title("Rewards vs Episodes")
 plt.legend()
-plt.savefig(f"gph/QTD_{alpha}_{gamma}_{epsilon}.png")
+plt.savefig(f"gph/{method[0]}_{alpha}_{gamma}_{epsilon}.png")
 plt.show()
