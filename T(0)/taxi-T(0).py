@@ -11,6 +11,7 @@ epsilon = 0.001  # Parámetro epsilon para la política epsilon-greedy que contr
 num_episodes = 10000  # Numero total de episodios de entrenar
 max_steps = 1000  # Numero maximo de pasos por episodio
 # num_bins = 10  # Numero de bisn para discretizar, cada dimension del espacio de estados
+heat = 0.5
 method = ["Q-learning", "SARSA", "T(0)"]
 
 # Crear el entorno
@@ -41,6 +42,16 @@ def choose_action(state):
         return env.action_space.sample()
     else:
         return np.argmax(Q[state])
+
+
+def softmax(q_values, tau):
+    preferences = q_values / tau
+    max_preference = np.max(preferences)
+    exp_preferences = np.exp(
+        preferences - max_preference
+    )  # Subtract max_preference for numerical stability
+    probabilities = exp_preferences / np.sum(exp_preferences)
+    return np.random.choice(len(q_values), p=probabilities)
 
 
 # Entrenamiento del agente usando Q-learning
