@@ -6,7 +6,7 @@ import seaborn as sns
 
 
 # Hiperparámetros
-alpha = 0.001  # Tasa de aprendizaje
+alpha = 0.6  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importacion de recompensas futuras
 epsilon = 0.001  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
 num_episodes = 10000  # Numero total de episodios de entrenar
@@ -21,7 +21,7 @@ method = ["Q-learning", "SARSA", "T(0)"]
     de control donde el bojetivo es balancear 
     un brazo doble invertido
 """
-env = gym.make("Taxi-v3")
+env = gym.make("Taxi-v3", render_mode="human")
 
 
 # Inicializar la Q-Table o cargar una anterior
@@ -29,7 +29,7 @@ env = gym.make("Taxi-v3")
 # estado-accion
 Q = None
 try:
-    Q = np.load("T(0).npy")
+    Q = np.load("T(0)soft.npy")
 except Exception as e:
     print(e)
 
@@ -57,6 +57,7 @@ def softmax(q_values, tau):
 
 # Entrenamiento del agente usando Q-learning
 rewardsEpoch = []
+errorsEpoch = []
 
 
 #  V(St) = V(St)+α[Rt+1 +γV(St+1)−V(St)
@@ -66,6 +67,8 @@ def taxi(soft: bool):
         state, info = env.reset()
         terminated = False
         totalRewards = 0
+        totalErrors = 0
+        steps = 0
         while not terminated:
             action = None
             if soft:
@@ -73,25 +76,33 @@ def taxi(soft: bool):
             else:
                 action = choose_action(state)
             next_state, reward, terminated, truncated, info = env.step(action)
+            steps += 1
             totalRewards += reward
             best_next_action = np.argmax(Q[next_state, :])
 
             Q[state, action] += alpha * (
-                reward
-                + gamma * np.max(Q[next_state, best_next_action])
-                - Q[state, action]
+                reward + gamma * Q[next_state, best_next_action] - Q[state, action]
             )
+            td_error = (
+                reward + gamma * Q[next_state, best_next_action] - Q[state, action]
+            )
+            Q[state, action] += alpha * td_error
+
+            totalErrors += abs(td_error)
             state = next_state
         rewardsEpoch.append(totalRewards)
+        errorsEpoch.append(totalErrors / steps)
 
-    np.save("T(0).npy", Q)
+    np.save("T(0)soft.npy", Q)
 
 
-def plot_rewards(rewards):
+def plot_metrics(rewards, errors):
     sns.set_theme(style="darkgrid")
     rewards = np.array(rewards)
-    block_size = 100
+    errors = np.array(errors)
+    block_size = 100  # Aumentar el tamaño del bloque para suavizar más la curva
     num_blocks = len(rewards) // block_size
+
     avg_rewards = np.mean(
         rewards[: num_blocks * block_size].reshape(-1, block_size), axis=1
     )
@@ -101,30 +112,35 @@ def plot_rewards(rewards):
     min_rewards = np.min(
         rewards[: num_blocks * block_size].reshape(-1, block_size), axis=1
     )
+    avg_errors = np.mean(
+        errors[: num_blocks * block_size].reshape(-1, block_size), axis=1
+    )
+
     x = np.arange(1, len(avg_rewards) + 1) * block_size
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(x, avg_rewards, label="Average Reward", color="blue")
-    plt.plot(x, max_rewards, label="Max Reward", color="orange", linestyle="--")
-    plt.plot(x, min_rewards, label="Min Reward", color="green", linestyle=":")
-    plt.fill_between(x, min_rewards, max_rewards, color="blue", alpha=0.1)
-    plt.xlabel("Episodes")
-    plt.ylabel("Reward")
-    plt.title("Learning Curve")
-    plt.legend()
+    fig, axs = plt.subplots(1, 2, figsize=(20, 6))
+
+    # Gráfica de Recompensas
+    axs[0].plot(x, avg_rewards, label="Average Reward", color="blue")
+    axs[0].plot(x, max_rewards, label="Max Reward", color="orange", linestyle="--")
+    axs[0].plot(x, min_rewards, label="Min Reward", color="green", linestyle=":")
+    axs[0].fill_between(x, min_rewards, max_rewards, color="blue", alpha=0.1)
+    axs[0].set_xlabel("Episodes")
+    axs[0].set_ylabel("Reward")
+    axs[0].set_title("Learning Curve - Rewards")
+    axs[0].legend()
+
+    # Gráfica de Errores TD
+    axs[1].plot(x, avg_errors, label="Average TD Error", color="red")
+    axs[1].set_xlabel("Episodes")
+    axs[1].set_ylabel("Error")
+    axs[1].set_title("Learning Curve - Errors T(0) ")
+    axs[1].legend()
+
     plt.savefig(f"gph/T(0)/{method[2]}_al{alpha}_ga{gamma}_ep{epsilon}.png")
     plt.show()
 
 
 # llamamos la función
-taxi(soft=False)
-plot_rewards(rewardsEpoch)
-
-# # Graficar las recompensas
-# plt.plot(range(num_episodes), rewardsEpoch)
-# plt.xlabel("Episodes")
-# plt.ylabel("Rewards")
-# plt.title("Rewards vs Episodes")
-# plt.legend()
-# # plt.savefig(f"gph/{method[2]}_a{alpha}_g{gamma}_e{epsilon}.png")
-# plt.show()
+taxi(soft=True)
+plot_metrics(rewardsEpoch, errorsEpoch)
