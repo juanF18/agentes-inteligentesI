@@ -6,7 +6,7 @@ import seaborn as sns
 
 
 # Hiperparámetros
-alpha = 0.6  # Tasa de aprendizaje
+alpha = 0.001  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento que determina la importacion de recompensas futuras
 epsilon = 0.001  # Parámetro epsilon para la política epsilon-greedy que controla la exploracicon vs la explotacion
 num_episodes = 10000  # Numero total de episodios de entrenar
@@ -29,7 +29,7 @@ env = gym.make("Taxi-v3")
 # estado-accion
 Q = None
 try:
-    Q = np.load("T(0)a.npy")
+    Q = np.load("T(0).npy")
 except Exception as e:
     print(e)
 
@@ -61,13 +61,17 @@ rewardsEpoch = []
 
 #  V(St) = V(St)+α[Rt+1 +γV(St+1)−V(St)
 # Funcion de entrenamiento en el ambiente de taxi
-def taxi():
+def taxi(soft: bool):
     for i in tqdm(range(num_episodes)):
         state, info = env.reset()
         terminated = False
         totalRewards = 0
         while not terminated:
-            action = choose_action(state)
+            action = None
+            if soft:
+                action = softmax(Q[state], heat)
+            else:
+                action = choose_action(state)
             next_state, reward, terminated, truncated, info = env.step(action)
             totalRewards += reward
             best_next_action = np.argmax(Q[next_state, :])
@@ -108,12 +112,12 @@ def plot_rewards(rewards):
     plt.ylabel("Reward")
     plt.title("Learning Curve")
     plt.legend()
-    plt.savefig(f"gph/{method[2]}_a{alpha}_g{gamma}_e{epsilon}.png")
+    plt.savefig(f"gph/T(0)/{method[2]}_al{alpha}_ga{gamma}_ep{epsilon}.png")
     plt.show()
 
 
 # llamamos la función
-taxi()
+taxi(soft=False)
 plot_rewards(rewardsEpoch)
 
 # # Graficar las recompensas
