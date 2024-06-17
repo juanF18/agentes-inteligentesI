@@ -19,7 +19,7 @@ method = ["Q-learning", "SARSA", "T(0)"]
     de control donde el bojetivo es balancear 
     un brazo doble invertido
 """
-env = gym.make("Taxi-v3", render_mode="human")
+env = gym.make("Taxi-v3")
 
 
 # Inicializar la Q-Table o cargar una anterior
@@ -27,7 +27,7 @@ env = gym.make("Taxi-v3", render_mode="human")
 # estado-accion
 Q = None
 try:
-    Q = np.load("Q-learning.npy")
+    Q = np.load("T(0).npy")
 except Exception as e:
     print(e)
 
@@ -51,21 +51,24 @@ rewardsEpoch = []
 # Funcion de entrenamiento en el ambiente de taxi
 def taxi():
     for i in tqdm(range(num_episodes)):
-        observacion, info = env.reset()
+        state, info = env.reset()
         terminated = False
         totalRewards = 0
         while not terminated:
-            action = choose_action(observacion)
-            next_observation, reward, terminated, truncated, info = env.step(action)
+            action = choose_action(state)
+            next_state, reward, terminated, truncated, info = env.step(action)
             totalRewards += reward
+            best_next_action = np.argmax(Q[next_state, :])
 
-            Q[observacion, action] += alpha * (
-                reward + gamma * np.max(Q[next_observation, :]) - Q[observacion, action]
+            Q[state, action] += alpha * (
+                reward
+                + gamma * np.max(Q[next_state, best_next_action])
+                - Q[state, action]
             )
-            observacion = next_observation
+            state = next_state
         rewardsEpoch.append(totalRewards)
 
-    np.save("Q-learning.npy", Q)
+    np.save("T(0).npy", Q)
 
 
 # llamamos la función
@@ -77,5 +80,5 @@ plt.xlabel("Episodes")
 plt.ylabel("Rewards")
 plt.title("Rewards vs Episodes")
 plt.legend()
-plt.savefig(f"gph/{method[0]}_a{alpha}_g{gamma}_e{epsilon}.png")
+plt.savefig(f"gph/{method[2]}_a{alpha}_g{gamma}_e{epsilon}.png")
 plt.show()
