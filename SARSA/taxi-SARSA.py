@@ -49,6 +49,16 @@ def choose_action(state):
         return np.argmax(Q[state])
 
 
+def softmax(q_values, tau):
+    preferences = q_values / tau
+    max_preference = np.max(preferences)
+    exp_preferences = np.exp(
+        preferences - max_preference
+    )  # Subtract max_preference for numerical stability
+    probabilities = exp_preferences / np.sum(exp_preferences)
+    return np.random.choice(len(q_values), p=probabilities)
+
+
 # Entrenamiento del agente usando Q-learning
 rewardsEpoch = []
 
