@@ -2,6 +2,7 @@ import gymnasium as gym
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import seaborn as sns
 
 
 # Hiperparámetros
@@ -28,7 +29,7 @@ env = gym.make("Taxi-v3")
 # estado-accion
 Q = None
 try:
-    Q = np.load("T(0).npy")
+    Q = np.load("T(0)a.npy")
 except Exception as e:
     print(e)
 
@@ -82,14 +83,44 @@ def taxi():
     np.save("T(0).npy", Q)
 
 
+def plot_rewards(rewards):
+    sns.set_theme(style="darkgrid")
+    rewards = np.array(rewards)
+    block_size = 100
+    num_blocks = len(rewards) // block_size
+    avg_rewards = np.mean(
+        rewards[: num_blocks * block_size].reshape(-1, block_size), axis=1
+    )
+    max_rewards = np.max(
+        rewards[: num_blocks * block_size].reshape(-1, block_size), axis=1
+    )
+    min_rewards = np.min(
+        rewards[: num_blocks * block_size].reshape(-1, block_size), axis=1
+    )
+    x = np.arange(1, len(avg_rewards) + 1) * block_size
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(x, avg_rewards, label="Average Reward", color="blue")
+    plt.plot(x, max_rewards, label="Max Reward", color="orange", linestyle="--")
+    plt.plot(x, min_rewards, label="Min Reward", color="green", linestyle=":")
+    plt.fill_between(x, min_rewards, max_rewards, color="blue", alpha=0.1)
+    plt.xlabel("Episodes")
+    plt.ylabel("Reward")
+    plt.title("Learning Curve")
+    plt.legend()
+    plt.savefig(f"gph/{method[2]}_a{alpha}_g{gamma}_e{epsilon}.png")
+    plt.show()
+
+
 # llamamos la función
 taxi()
+plot_rewards(rewardsEpoch)
 
-# Graficar las recompensas
-plt.plot(range(num_episodes), rewardsEpoch)
-plt.xlabel("Episodes")
-plt.ylabel("Rewards")
-plt.title("Rewards vs Episodes")
-plt.legend()
-plt.savefig(f"gph/{method[2]}_a{alpha}_g{gamma}_e{epsilon}.png")
-plt.show()
+# # Graficar las recompensas
+# plt.plot(range(num_episodes), rewardsEpoch)
+# plt.xlabel("Episodes")
+# plt.ylabel("Rewards")
+# plt.title("Rewards vs Episodes")
+# plt.legend()
+# # plt.savefig(f"gph/{method[2]}_a{alpha}_g{gamma}_e{epsilon}.png")
+# plt.show()
