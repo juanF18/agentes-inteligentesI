@@ -1,6 +1,5 @@
 import gymnasium as gym
 import numpy as np
-import random
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
@@ -9,13 +8,14 @@ import pickle
 # Configuración del entorno
 env = gym.make("LunarLander-v2", continuous=False)
 
-# Parámetros del Q-learning
-alpha = 0.01  # Tasa de aprendizaje
+# Parámetros del TD(0)
+alpha = 0.2  # Tasa de aprendizaje
 gamma = 0.99  # Factor de descuento
-epsilon = 1.0  # Tasa de exploración inicial
-epsilon_decay = 0.0095  # Decaimiento de epsilon
-epsilon_min = 0.1  # Valor mínimo de epsilon
+tau = 6.0  # Parámetro de temperatura para Softmax
+tau_decay = 0.995  # Decaimiento de tau
+tau_min = 0.1  # Valor mínimo de tau
 num_episodes = 5000  # Número de episodios de entrenamiento
+reward_threshold = -400  # Umbral de recompensa para terminar el episodio temprano
 
 # Discretización del espacio de estados
 state_bins = [
@@ -39,23 +39,25 @@ def discretize_state(state):
 
 
 # Inicialización de la tabla Q
-q_table = np.zeros([len(b) for b in state_bins] + [env.action_space.n])
+v_table = np.zeros([len(b) for b in state_bins] + [env.action_space.n])
 
 # Intentar cargar la tabla Q existente
 try:
-    with open("./Q-learning/QLunarQ_EpsilonGreedy.pkl", "rb") as f:
-        q_table = pickle.load(f)
+    with open("./TD-Learning/Q_table_softmax.pkl", "rb") as f:
+        v_table = pickle.load(f)
     print("Tabla Q cargada exitosamente.")
 except FileNotFoundError:
     print("No se encontró una tabla Q guardada, se inicializa una nueva.")
 
 
-# Función de selección de acción usando la política epsilon-greedy
-def epsilon_greedy_policy(state, epsilon):
-    if np.random.uniform(0, 1) > epsilon:
-        return np.argmax(q_table[state])
-    else:
-        return random.randrange(env.action_space.n)
+# Función de selección de acción usando la política Softmax
+def softmax_policy(state, tau):
+    q_values = v_table[state]
+    e_x = np.exp(
+        (q_values - np.max(q_values)) / tau
+    )  # Subtracción para estabilidad numérica
+    probabilities = e_x / np.sum(e_x)
+    return np.random.choice(len(q_values), p=probabilities)
 
 
 def plot_metrics(rewards, errors):
@@ -96,14 +98,15 @@ def plot_metrics(rewards, errors):
     axs[1].plot(x, avg_errors, label="Average TD Error", color="red")
     axs[1].set_xlabel("Episodes")
     axs[1].set_ylabel("TD Error")
-    axs[1].set_title("Learning Curve - Errors Q-learning epsilon")
+    axs[1].set_title("Learning Curve - Errors TD(0) Softmax")
+    axs[1].set_ylim(0, max(avg_errors) + 10)  # Ajuste para evitar recortes
     axs[1].legend()
 
-    plt.savefig("./assets/Metrics_Q_Learning_EpsilonGreedy.png")
+    plt.savefig("./assets/Metrics_TD0_Softmax.png")
     plt.show()
 
 
-# Entrenamiento con Q-learning
+# Entrenamiento con TD(0)
 rewards = []
 errors = []
 
@@ -114,36 +117,47 @@ for episode in tqdm(range(num_episodes), desc="# Episodios"):
     episode_error = 0
 
     done = False
-    while not done:
-        action = epsilon_greedy_policy(state, epsilon)
+    steps = 0  # Contador de pasos para monitoreo
+    while (
+        not done and steps < 1000
+    ):  # Limitar los pasos por episodio para evitar bucles infinitos
+        action = softmax_policy(state, tau)
         next_state, reward, done, _, _ = env.step(action)
         next_state = discretize_state(next_state)
 
+        # Cálculo del objetivo TD
+        td_target = reward + gamma * np.max(v_table[next_state])
+
+        # Cálculo del error TD
+        td_error = td_target - v_table[state][action]
+
         # Actualización de la tabla Q
-        best_next_action = np.argmax(q_table[next_state])
-        td_target = reward + gamma * q_table[next_state][best_next_action]
-        td_error = td_target - q_table[state][action]
-        q_table[state][action] += alpha * td_error
+        v_table[state][action] += alpha * td_error
 
         state = next_state
         total_reward += reward
         episode_error += abs(td_error)
+        steps += 1
 
-    # Decaimiento de epsilon
-    if epsilon > epsilon_min:
-        epsilon *= epsilon_decay
+        # Terminar el episodio si la recompensa total es menor que el umbral
+        if total_reward < reward_threshold:
+            break
+
+    # Decaimiento de tau
+    if tau > tau_min:
+        tau *= tau_decay
 
     rewards.append(total_reward)
     errors.append(episode_error)
 
     if (episode + 1) % 100 == 0:
         print(
-            f"Episodio: {episode + 1}, Recompensa Total: {total_reward},  epsilon:{epsilon:.4f}"
+            f"Episodio: {episode + 1}, Recompensa Total: {total_reward}, tau: {tau:.4f}, steps: {steps}"
         )
 
 # Guardar la tabla Q actualizada
-with open("./Q-learning/QLunarQ_EpsilonGreedy.pkl", "wb") as f:
-    pickle.dump(q_table, f)
+with open("./TD-Learning/v_table_softmax.pkl", "wb") as f:
+    pickle.dump(v_table, f)
     print("Tabla Q guardada exitosamente.")
 
 # Visualizar la curva de aprendizaje
